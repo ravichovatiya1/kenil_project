@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>PDF Analyzer</title>
+</head>
+<body>
+
+<h2>Upload PDF</h2>
+
+<form method="POST" enctype="multipart/form-data">
+    <label>Upload PDF:</label>
+    <input type="file" name="pdf" required><br><br>
+
+    <label>Search Words (comma separated):</label>
+    <input type="address" name="words" value="Gowtham,Navsari"><br><br>
+
+    <label>Min Qty:</label>
+    <input type="number" name="min_qty" value="2"><br><br>
+
+    <label>Name Min Count:</label>
+    <input type="number" name="name_min" value="1"><br><br>
+
+    <button type="submit">Analyze</button>
+</form>
+
+</body>
+</html>

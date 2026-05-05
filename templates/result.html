@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Result</title>
+</head>
+<body>
+
+<h2>Word Results</h2>
+<table border="1">
+<tr>
+    <th>Word</th>
+    <th>Pages</th>
+</tr>
+{% for word, pages in word_results.items() %}
+<tr>
+    <td>{{ word }}</td>
+    <td>{{ pages }}</td>
+</tr>
+{% endfor %}
+</table>
+
+
+<h2>Qty Results</h2>
+<table border="1">
+<tr>
+    <th>Page</th>
+    <th>Qty</th>
+</tr>
+{% for item in qty_results %}
+<tr>
+    <td>{{ item.page }}</td>
+    <td>{{ item.qty }}</td>
+</tr>
+{% endfor %}
+</table>
+
+
+<h2>Full Name Counts</h2>
+<table border="1">
+<tr>
+    <th>Name</th>
+    <th>Count</th>
+    <th>Pages</th>
+</tr>
+{% for name, data in full_name_result.items() %}
+<tr>
+    <td>{{ name }}</td>
+    <td>{{ data.count }}</td>
+    <td>{{ data.pages }}</td>
+</tr>
+{% endfor %}
+</table>
+
+
+<h2>First Name Counts</h2>
+<table border="1">
+<tr>
+    <th>Name</th>
+    <th>Count</th>
+    <th>Pages</th>
+</tr>
+{% for name, data in first_name_result.items() %}
+<tr>
+    <td>{{ name }}</td>
+    <td>{{ data.count }}</td>
+    <td>{{ data.pages }}</td>
+</tr>
+{% endfor %}
+</table>
+
+<br>
+<a href="/">Go Back</a>
+
+</body>
+</html>
