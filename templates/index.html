@@ -23,5 +23,28 @@
     <button type="submit">Analyze</button>
 </form>
 
+
+<br><hr>
+
+<form method="POST" enctype="multipart/form-data">
+    <input type="hidden" name="action" value="sort">
+
+    <label>Upload PDF:</label>
+    <input type="file" name="pdf" required><br><br>
+
+    <button type="submit">Sort By SKU</button>
+</form>
+
+{% if sorted_pdf %}
+<hr>
+<h3>PDF Sorted Successfully</h3>
+
+<a href="{{ url_for('download_file', filename=sorted_pdf) }}">
+    Download Sorted PDF
+</a>
+
+{% endif %}
+
+
 </body>
 </html>

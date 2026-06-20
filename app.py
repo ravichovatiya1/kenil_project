@@ -1,9 +1,11 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, send_from_directory
 import pdfplumber
 import re
 from collections import defaultdict
 import os
 from werkzeug.utils import secure_filename
+import fitz
+import re
 
 app = Flask(__name__)
 
@@ -15,6 +17,53 @@ app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
 # ✅ Ensure uploads folder exists
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+
+
+def extract_sku(text):
+
+    patterns = [
+        r"SKU\s+Size\s+Qty\s+Color\s+Order No\.\s*([A-Za-z0-9\-_]+)",
+        r"Product Details.*?SKU.*?\n([A-Za-z0-9\-_]+)"
+    ]
+
+    for pattern in patterns:
+        m = re.search(pattern, text, re.DOTALL | re.IGNORECASE)
+        if m:
+            return m.group(1).strip().upper()
+
+    return "ZZZZ_UNKNOWN"
+
+
+def sort_pdf_by_sku(input_pdf, output_pdf):
+
+    doc = fitz.open(input_pdf)
+
+    pages = []
+
+    for i in range(len(doc)):
+        text = doc.load_page(i).get_text()
+        sku = extract_sku(text)
+
+        pages.append({
+            "page": i,
+            "sku": sku
+        })
+
+    pages.sort(key=lambda x: x["sku"])
+
+    new_pdf = fitz.open()
+
+    for item in pages:
+        new_pdf.insert_pdf(
+            doc,
+            from_page=item["page"],
+            to_page=item["page"]
+        )
+
+    new_pdf.save(output_pdf)
+    new_pdf.close()
+    doc.close()
 
 
 # ----------------------------
@@ -136,43 +185,95 @@ def get_first_name_counts(name_counts, name_pages, name_min):
 # ----------------------------
 @app.route("/", methods=["GET", "POST"])
 def index():
+
     if request.method == "POST":
+
+        action = request.form.get("action")
+
         file = request.files.get("pdf")
 
         if file and file.filename != "":
-            # ✅ Secure filename
+
             filename = secure_filename(file.filename)
 
-            # ✅ Save path
-            file_path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
+            file_path = os.path.join(
+                app.config["UPLOAD_FOLDER"],
+                filename
+            )
 
-            # Save file
             file.save(file_path)
 
-            # Get inputs
-            words = request.form.get("words", "").split(",")
-            words = [w.strip() for w in words if w.strip()]
+            ####################################################
+            ## ANALYZE PDF
+            ####################################################
+            if action == "analyze":
 
-            min_qty = int(request.form.get("min_qty", 1))
-            name_min = int(request.form.get("name_min", 1))
+                words = request.form.get("words", "").split(",")
 
-            # Process PDF
-            word_results, qty_results, name_counts, name_pages = analyze_pdf(
-                file_path, words, min_qty
-            )
+                words = [w.strip() for w in words if w.strip()]
 
-            full_name_result = get_full_name_counts(name_counts, name_pages, name_min)
-            first_name_result = get_first_name_counts(name_counts, name_pages, name_min)
+                min_qty = int(request.form.get("min_qty", 1))
 
-            return render_template(
-                "result.html",
-                word_results=word_results,
-                qty_results=qty_results,
-                full_name_result=full_name_result,
-                first_name_result=first_name_result
-            )
+                name_min = int(request.form.get("name_min", 1))
+
+                word_results, qty_results, name_counts, name_pages = analyze_pdf(
+                    file_path,
+                    words,
+                    min_qty
+                )
+
+                full_name_result = get_full_name_counts(
+                    name_counts,
+                    name_pages,
+                    name_min
+                )
+
+                first_name_result = get_first_name_counts(
+                    name_counts,
+                    name_pages,
+                    name_min
+                )
+
+                return render_template(
+                    "result.html",
+                    word_results=word_results,
+                    qty_results=qty_results,
+                    full_name_result=full_name_result,
+                    first_name_result=first_name_result
+                )
+
+            ####################################################
+            ## SORT PDF
+            ####################################################
+            elif action == "sort":
+
+                output_name = "sorted_" + filename
+
+                output_path = os.path.join(
+                    app.config["UPLOAD_FOLDER"],
+                    output_name
+                )
+
+                sort_pdf_by_sku(
+                    file_path,
+                    output_path
+                )
+
+                return render_template(
+                    "index.html",
+                    sorted_pdf=output_name
+                )
 
     return render_template("index.html")
+
+
+@app.route("/download/<filename>")
+def download_file(filename):
+    return send_from_directory(
+        app.config["UPLOAD_FOLDER"],
+        filename,
+        as_attachment=True
+    )
 
 
 # ----------------------------
